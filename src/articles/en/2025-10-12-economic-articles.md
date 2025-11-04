@@ -2,7 +2,7 @@
 title: "Analyze Economic Articles and Study Investment Opportunities"
 date: "2025-10-12"
 tools: ["chatgpt"]
-category: "Lifestyle"
+category: "Life"
 action_button:
   text: "Visit Stratechery"
   url: "https://stratechery.com/"

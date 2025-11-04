@@ -2,7 +2,7 @@
 title: "経済記事を分析し、投資機会を学ぶ"
 date: "2025-10-12"
 tools: ["chatgpt"]
-category: "生活"
+category: "ライフ"
 action_button:
   text: "Stratechery を訪問する"
   url: "https://stratechery.com/"
