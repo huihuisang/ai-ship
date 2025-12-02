@@ -49,6 +49,11 @@ module.exports = {
     title: 'Obsidian',
     svg: 'https://github.com/user-attachments/assets/696e97bd-7bdb-46ea-8696-29b99b3710f0',
   },
+  zenmux: {
+    symbolId: 'icon-zenmux',
+    title: 'ZenMux',
+    svg: 'https://github.com/user-attachments/assets/6dd1a58b-5983-49ad-9105-fedca4efa319'
+  },
   __default: {
     symbolId: 'icon-generic',
     title: 'AI Tool',
