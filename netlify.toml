@@ -8,4 +8,4 @@
 [[plugins]]
   package = "@netlify/plugin-sitemap"
   [plugins.inputs]
-    baseUrl = "https://example.com"
+    baseUrl = "https://ai.onev.cat"
