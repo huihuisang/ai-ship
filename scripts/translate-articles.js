@@ -160,22 +160,31 @@ async function gatherTranslationTasks(sourceFiles) {
 
 async function createCodexClient() {
   try {
-    const codexModule = await import("@openai/codex-sdk");
-    const CodexCtor = codexModule.Codex || codexModule.default;
-    if (!CodexCtor) {
-      throw new Error("Codex SDK export not found.");
+    const { default: OpenAI } = await import("openai");
+
+    // Use environment variable for API key
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+
+    if (!apiKey) {
+      throw new Error("DEEPSEEK_API_KEY not found in environment variables.");
     }
-    return new CodexCtor();
+
+    const client = new OpenAI({
+      baseURL: "https://api.deepseek.com",
+      apiKey: apiKey,
+    });
+
+    return client;
   } catch (error) {
     if (
       error.message.includes("Cannot find module") ||
       error.message.includes("Cannot find package")
     ) {
       throw new Error(
-        "Codex SDK not installed or unavailable; skipping translations."
+        "OpenAI SDK not installed or unavailable; skipping translations."
       );
     }
-    throw new Error(`Unable to initialise Codex SDK: ${error.message}`);
+    throw new Error(`Unable to initialise DeepSeek client: ${error.message}`);
   }
 }
 
@@ -236,13 +245,23 @@ function buildPrompt(template, variables) {
   }, template);
 }
 
-async function runTranslation(codex, prompt) {
-  const thread = codex.startThread({ skipGitRepoCheck: true });
-  const turn = await thread.run(prompt);
-  const response = turn?.finalResponse;
+async function runTranslation(client, prompt) {
+  // Call DeepSeek API using OpenAI-compatible interface
+  const completion = await client.chat.completions.create({
+    model: "deepseek-chat",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.3, // Lower temperature for more consistent translations
+  });
+
+  const response = completion.choices[0]?.message?.content;
 
   if (typeof response !== "string" || !response.trim()) {
-    throw new Error("Empty response from Codex.");
+    throw new Error("Empty response from DeepSeek API.");
   }
 
   return response.trim();
