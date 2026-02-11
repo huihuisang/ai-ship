@@ -74,7 +74,6 @@
     <div class="container">
       <h1 class="site-title"><span class="site-title__text">{{ siteLangData.title }}</span><span class="site-title__icon" aria-hidden="true"><svg class="icon icon-sailboat" width="96" height="96" fill="none"><use href="#icon-sailboat" /></svg></span></h1>
       <p class="site-description">{{ siteLangData.description }}</p>
-      <p class="site-description__note">Built by <a href="https://onevcat.com" target="_blank" rel="noopener">@onevcat</a> with ❤️</p>
       <nav class="site-nav" aria-label="{{ 'nav.main' | t(currentLang) }}">
         <ul>
           {% for item in navigation %}
@@ -90,11 +89,25 @@
   </main>
 
   <footer class="site-footer" id="support">
-    <div class="container">
-      <p>© {{ buildTime | year }} 「{{ siteLangData.title }}」</p>
-      <p>{{ 'footer.build' | t(currentLang) }}</p>
+    <div class="container site-footer__inner">
+      <div class="site-footer__left">
+        <p>© {{ buildTime | year }} 「{{ siteLangData.title }}」</p>
+        <p>{{ 'footer.build' | t(currentLang) }}</p>
+      </div>
+      <div class="site-footer__right">
+        <p>Built by <a href="https://onevcat.com" target="_blank" rel="noopener">@onevcat</a> with ❤️</p>
+      </div>
     </div>
   </footer>
+
+  {# -- Article detail overlay -- #}
+  <div class="article-overlay" data-article-overlay aria-hidden="true">
+    <div class="article-overlay__backdrop" data-article-overlay-dismiss></div>
+    <div class="article-overlay__container" role="dialog" aria-modal="true" aria-label="{{ 'article.overlay.dialog' | t(currentLang) }}">
+      <div class="article-overlay__body" data-article-overlay-body>
+      </div>
+    </div>
+  </div>
 
   <div class="image-modal" data-image-modal aria-hidden="true" hidden>
     <div class="image-modal__backdrop" data-image-modal-dismiss></div>

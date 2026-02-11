@@ -1,5 +1,5 @@
 {% macro caseCard(item, lang='zh') %}
-<article class="case-card" id="case-{{ item.fileSlug }}" data-category="{{ item.data.category | default('other') }}">
+<article class="case-card" id="case-{{ item.fileSlug }}" data-article-slug="{{ item.fileSlug }}" data-category="{{ item.data.category | default('other') }}">
   {% if item.data.category %}
   <span class="case-card__badge">{{ item.data.category }}</span>
   {% endif %}
@@ -26,9 +26,12 @@
   {% elif lang == 'jp' %}
     {% set locale = 'ja-JP' %}
   {% endif %}
-  <div class="case-card__content">
-    <time class="case-card__timestamp visually-hidden" aria-hidden="true" datetime="{{ item.date | dateIso }}">{{ item.date | readableDate(locale) }}</time>
-    {{ item.templateContent | safe }}
+  <div class="case-card__content-wrapper" data-content-wrapper>
+    <div class="case-card__content">
+      <time class="case-card__timestamp visually-hidden" aria-hidden="true" datetime="{{ item.date | dateIso }}">{{ item.date | readableDate(locale) }}</time>
+      {{ item.templateContent | safe }}
+    </div>
+    <div class="case-card__content-fade" aria-hidden="true"></div>
   </div>
 
   {% if item.data.action_button and item.data.action_button.url or item.data.prompt %}

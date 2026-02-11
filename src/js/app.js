@@ -1,3 +1,6 @@
+// Module-level reference for image modal binding (shared with article overlay)
+let _bindImageForModal = null;
+
 const copyPrompt = async (button) => {
   if (!button) return;
   const payload = button.dataset.copySource;
@@ -582,6 +585,230 @@ const initImageModal = () => {
   };
 
   document.querySelectorAll('.case-card__content img').forEach(bindImage);
+
+  // Expose bindImage for reuse in article overlay
+  _bindImageForModal = bindImage;
+};
+
+// Detect cards whose content exceeds the collapse threshold and add truncation.
+// Each card gets a random max-height within a 300px range for visual variety.
+const initContentTruncation = () => {
+  const BASE_HEIGHT = 666; // Minimum truncation height (px)
+  const RANDOM_RANGE = 0; // Random offset range (px), so max-height is 280-480px
+
+  document.querySelectorAll('[data-content-wrapper]').forEach((wrapper) => {
+    const content = wrapper.querySelector('.case-card__content');
+    if (!content) return;
+
+    // Randomize the collapse height for each card
+    const collapseHeight = BASE_HEIGHT + Math.floor(Math.random() * RANDOM_RANGE);
+
+    if (content.scrollHeight <= collapseHeight) return;
+
+    // Apply random max-height and mark as truncated
+    wrapper.style.setProperty('--content-collapse-height', `${collapseHeight}px`);
+    wrapper.classList.add('is-truncated');
+
+    // Mark card as expandable (clickable)
+    const card = wrapper.closest('.case-card');
+    if (card) {
+      card.classList.add('is-expandable');
+    }
+  });
+};
+
+// Article detail overlay: open/close, animations, a11y, hash routing
+const initArticleOverlay = () => {
+  const overlay = document.querySelector('[data-article-overlay]');
+  if (!overlay) return;
+
+  const overlayBody = overlay.querySelector('[data-article-overlay-body]');
+  const dismissTargets = overlay.querySelectorAll('[data-article-overlay-dismiss]');
+  let lastActiveElement = null;
+  let currentSlug = null;
+  // Fallback timer in case transitionend does not fire
+  let closeFallbackTimer = null;
+
+  const handleKeydown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeOverlay();
+    }
+  };
+
+  const openOverlay = (slug) => {
+    const sourceCard = document.querySelector(
+      `.case-card[data-article-slug="${slug}"]`
+    );
+    if (!sourceCard || !overlayBody) return;
+
+    currentSlug = slug;
+    lastActiveElement =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    // Clone card content into overlay body
+    const clone = sourceCard.cloneNode(true);
+    clone.removeAttribute('id');
+    overlayBody.innerHTML = '';
+    overlayBody.appendChild(clone);
+
+    // Re-bind copy buttons inside the clone
+    clone.querySelectorAll('.copy-action').forEach((button) => {
+      button.addEventListener('click', () => copyPrompt(button));
+    });
+
+    // Re-bind image modal triggers inside the clone
+    clone.querySelectorAll('.case-card__content img').forEach((img) => {
+      img.removeAttribute('data-image-modal-bound');
+      if (_bindImageForModal) {
+        _bindImageForModal(img);
+      }
+    });
+
+    // Re-bind prompt details inside the clone
+    clone.querySelectorAll('.case-card__prompt-summary-only').forEach((summaryOnly) => {
+      const cardId = summaryOnly.dataset.cardId;
+      const fullDetails = clone.querySelector(
+        `.case-card__prompt-full[data-card-id="${cardId}"]`
+      );
+      if (!fullDetails) return;
+      fullDetails.style.height = '0px';
+      fullDetails.classList.remove('is-open');
+
+      summaryOnly.open = false;
+      summaryOnly.addEventListener('toggle', () => {
+        if (summaryOnly.open) {
+          const target = fullDetails.scrollHeight;
+          fullDetails.style.height = '0px';
+          fullDetails.classList.add('is-open');
+          requestAnimationFrame(() => {
+            fullDetails.style.height = `${target}px`;
+          });
+          fullDetails.addEventListener('transitionend', function onEnd(e) {
+            if (e.propertyName !== 'height') return;
+            fullDetails.style.height = 'auto';
+            fullDetails.removeEventListener('transitionend', onEnd);
+          });
+        } else {
+          const start = fullDetails.scrollHeight;
+          fullDetails.style.height = `${start}px`;
+          requestAnimationFrame(() => {
+            fullDetails.classList.remove('is-open');
+            fullDetails.style.height = '0px';
+          });
+        }
+      });
+    });
+
+    // Enable page transition, then slide page down and show overlay
+    overlay.classList.remove('is-closing');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('article-overlay-animating');
+    document.body.classList.add('article-overlay-open');
+    document.addEventListener('keydown', handleKeydown);
+
+    // Wait one frame so the browser registers the initial state,
+    // then add is-active to trigger the CSS transitions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-active');
+      });
+    });
+
+    // Update URL hash for browser back support
+    history.pushState({ articleOverlay: slug }, '', `#article-${slug}`);
+  };
+
+  const closeOverlay = (options = {}) => {
+    const { skipHistory = false } = options;
+    if (!overlay.classList.contains('is-active')) return;
+
+    // Start close animations
+    overlay.classList.add('is-closing');
+    overlay.classList.remove('is-active');
+    document.body.classList.remove('article-overlay-open');
+    document.body.classList.add('article-overlay-closing');
+
+    const finishClose = () => {
+      if (closeFallbackTimer) {
+        clearTimeout(closeFallbackTimer);
+        closeFallbackTimer = null;
+      }
+      overlay.classList.remove('is-closing');
+      overlay.setAttribute('aria-hidden', 'true');
+      overlayBody.innerHTML = '';
+      // Remove animation scoping classes so page transitions
+      // don't interfere with other features (e.g. image modal)
+      document.body.classList.remove('article-overlay-animating');
+      document.body.classList.remove('article-overlay-closing');
+    };
+
+    // Wait for close animation to complete
+    const container = overlay.querySelector('.article-overlay__container');
+    const handleTransitionEnd = (event) => {
+      if (event.target !== container) return;
+      container.removeEventListener('transitionend', handleTransitionEnd);
+      finishClose();
+    };
+    container.addEventListener('transitionend', handleTransitionEnd);
+
+    // Fallback in case transitionend does not fire
+    closeFallbackTimer = setTimeout(finishClose, 500);
+
+    document.removeEventListener('keydown', handleKeydown);
+
+    // Restore URL
+    if (!skipHistory) {
+      history.pushState(null, '', window.location.pathname);
+    }
+
+    // Restore focus to the button that opened the overlay
+    if (lastActiveElement) {
+      lastActiveElement.focus({ preventScroll: true });
+      lastActiveElement = null;
+    }
+
+    currentSlug = null;
+  };
+
+  // Bind expandable card clicks (cards with truncated content)
+  document.querySelectorAll('.case-card.is-expandable').forEach((card) => {
+    card.addEventListener('click', (event) => {
+      // Don't trigger overlay when clicking interactive elements inside the card
+      const interactive = event.target.closest('a, button, details, summary, [data-image-modal-trigger]');
+      if (interactive) return;
+
+      const slug = card.dataset.articleSlug;
+      if (slug) openOverlay(slug);
+    });
+  });
+
+  // Bind dismiss targets (backdrop + close button)
+  dismissTargets.forEach((trigger) => {
+    trigger.addEventListener('click', () => closeOverlay());
+  });
+
+  // Handle browser back/forward navigation
+  window.addEventListener('popstate', () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#article-')) {
+      const slug = hash.replace('#article-', '');
+      if (currentSlug !== slug) {
+        openOverlay(slug);
+      }
+    } else if (overlay.classList.contains('is-active')) {
+      closeOverlay({ skipHistory: true });
+    }
+  });
+
+  // Handle page load with hash (direct link to article overlay)
+  const initialHash = window.location.hash;
+  if (initialHash.startsWith('#article-')) {
+    const slug = initialHash.replace('#article-', '');
+    requestAnimationFrame(() => openOverlay(slug));
+  }
 };
 
 const init = () => {
@@ -590,6 +817,8 @@ const init = () => {
   initControls();
   initImageModal();
   initSailboat();
+  initContentTruncation();
+  initArticleOverlay();
 };
 
 document.addEventListener('DOMContentLoaded', init);

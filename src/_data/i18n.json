@@ -30,7 +30,10 @@
     "footer.build": "构建方式：Eleventy + Vanilla JS + Codex",
     "actions.view": "查看详情",
     "image.modal.close": "关闭图片",
-    "image.modal.dialog": "图片预览"
+    "image.modal.dialog": "图片预览",
+    "article.readMore": "阅读全文",
+    "article.overlay.close": "关闭",
+    "article.overlay.dialog": "文章详情"
   },
   "en": {
     "nav.about": "About",
@@ -63,7 +66,10 @@
     "footer.build": "Built with: Eleventy + Vanilla JS + Codex",
     "actions.view": "View details",
     "image.modal.close": "Close image",
-    "image.modal.dialog": "Image preview"
+    "image.modal.dialog": "Image preview",
+    "article.readMore": "Read Full Article",
+    "article.overlay.close": "Close",
+    "article.overlay.dialog": "Article detail"
   },
   "jp": {
     "nav.about": "概要",
@@ -96,6 +102,9 @@
     "footer.build": "構築方法：Eleventy + Vanilla JS + Codex",
     "actions.view": "詳細を見る",
     "image.modal.close": "画像を閉じる",
-    "image.modal.dialog": "画像プレビュー"
+    "image.modal.dialog": "画像プレビュー",
+    "article.readMore": "全文を読む",
+    "article.overlay.close": "閉じる",
+    "article.overlay.dialog": "記事詳細"
   }
 }

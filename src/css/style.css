@@ -323,14 +323,18 @@ a:focus {
 }
 
 .case-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(1.5rem, 3vw, 2.5rem);
+  columns: 1;
+  column-gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.case-grid > .case-card {
+  break-inside: avoid;
+  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 @media (min-width: 768px) {
   .case-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    columns: 2;
   }
 }
 
@@ -835,6 +839,29 @@ body.image-modal-open {
   color: var(--fg-muted);
 }
 
+.site-footer__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.site-footer__right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .site-footer__inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .site-footer__right {
+    text-align: left;
+  }
+}
+
 @media (max-width: 720px) {
   .site-nav ul {
     gap: 0.65rem 1rem;
@@ -842,4 +869,179 @@ body.image-modal-open {
   .lang-switch {
     margin-top: 0.75rem;
   }
+}
+
+/* ===== Article content truncation ===== */
+.case-card__content-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.case-card__content-wrapper.is-truncated {
+  max-height: var(--content-collapse-height, 300px);
+}
+
+/* Gradient fade mask at the bottom of truncated content */
+.case-card__content-fade {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.case-card__content-wrapper.is-truncated .case-card__content-fade {
+  display: block;
+}
+
+/* Clickable card state for truncated cards */
+.case-card.is-expandable {
+  cursor: pointer;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.case-card.is-expandable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 28px 48px rgba(190, 63, 72, 0.12);
+}
+
+:root[data-theme='dark'] .case-card.is-expandable:hover {
+  box-shadow: 0 28px 48px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Article detail overlay ===== */
+
+/* Lock body scroll when overlay is open */
+body.article-overlay-open {
+  overflow: hidden;
+}
+
+/* Transition only active during overlay animation, removed after to avoid side effects */
+body.article-overlay-animating .site-header__top,
+body.article-overlay-animating .site-header,
+body.article-overlay-animating .site-main,
+body.article-overlay-animating .site-footer {
+  transition: transform 400ms cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 350ms ease;
+}
+
+/* Slide entire page content down when overlay opens */
+body.article-overlay-open .site-header__top,
+body.article-overlay-open .site-header,
+body.article-overlay-open .site-main,
+body.article-overlay-open .site-footer {
+  transform: translateY(60px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Overlay root container */
+.article-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.article-overlay.is-active,
+.article-overlay.is-closing {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Frosted glass backdrop */
+.article-overlay__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.article-overlay.is-active .article-overlay__backdrop {
+  opacity: 1;
+}
+
+:root[data-theme='dark'] .article-overlay__backdrop {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Dialog container with slide-up animation */
+.article-overlay__container {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 94vw);
+  margin-top: clamp(2rem, 6vw, 4rem);
+  margin-bottom: 2rem;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: transform 400ms cubic-bezier(0.0, 0, 0.2, 1) 100ms,
+              opacity 350ms ease 100ms;
+}
+
+.article-overlay.is-active .article-overlay__container {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Close animation states */
+.article-overlay.is-closing .article-overlay__backdrop {
+  opacity: 0;
+  transition: opacity 250ms ease 50ms;
+}
+
+.article-overlay.is-closing .article-overlay__container {
+  transform: translateY(60px);
+  opacity: 0;
+  transition: transform 300ms cubic-bezier(0.4, 0, 1, 1),
+              opacity 250ms ease;
+}
+
+/* Reset card styles inside overlay: remove truncation */
+.article-overlay__body .case-card {
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.2);
+}
+
+.article-overlay__body .case-card__content-wrapper {
+  max-height: none !important;
+  overflow: visible;
+}
+
+.article-overlay__body .case-card__content-fade {
+  display: none !important;
+}
+
+/* Enhanced typography for full article reading */
+.article-overlay__body .case-card__content {
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+.article-overlay__body .case-card__content h2,
+.article-overlay__body .case-card__content h3 {
+  margin-top: 1.5rem;
+}
+
+/* ===== Article overlay mobile responsive ===== */
+@media (max-width: 720px) {
+  .article-overlay__container {
+    width: 100vw;
+    margin-top: 0;
+    margin-bottom: 0;
+    min-height: 100vh;
+  }
+
 }
